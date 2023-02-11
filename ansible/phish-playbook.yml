@@ -1,0 +1,55 @@
+---
+- hosts: all
+  user: ubuntu
+  become: true
+  become_user: root
+  tasks: 
+  - name: "update"
+    ansible.builtin.shell: sudo apt-get -y update
+  - name: "upgrade"
+    ansible.builtin.shell: sudo apt-get -y upgrade
+  - name: "Install golang"
+    ansible.builtin.shell: sudo apt-get -y install golang-go
+  - name: "Install certbot"
+    ansible.builtin.shell: sudo apt-get -y install certbot
+  - name: "Install Git"
+    ansible.builtin.shell: sudo apt-get -y install git
+  - name: "Install GoPhish"
+    ansible.builtin.shell: sudo git clone https://github.com/gophish/gophish.git
+  - name: Copy file with owner and permissions
+    ansible.builtin.copy:
+      src: downloads/404.html
+      dest: /home/ubuntu/gophish/templates/404.html
+      owner: ubuntu
+      mode: '0644'
+  - name: Copy file with owner and permissions
+    ansible.builtin.copy:
+      src: downloads/fix404.txt
+      dest: /home/ubuntu/fix404.txt
+      owner: ubuntu
+      mode: '0644'
+  - name: "Install GoPhish and make modifications"
+    ansible.builtin.shell: |
+      sudo find /home/ubuntu/gophish/. -type f -exec sed -i 's/X-Gophish-Contact/X-serverstring1-Contact/g' {} + &&
+      sudo find /home/ubuntu/gophish/. -type f -exec sed -i 's/X-Gophish-Signature/X-serverstring1-Signature/g' {} + &&
+      sudo find /home/ubuntu/gophish/config/config.go -type f -exec sed -i 's/const ServerName = "gophish"/const ServerName = "serverstring1"/g' {} + &&
+      sudo sed -i 's/http.NotFound/customNotFound/g' /home/ubuntu/gophish/controllers/phish.go &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/models/campaign.go &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/models/template_context.go &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/models/result.go &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/models/attachment_test.go &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/models/template_context_test.go &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/models/campaign.go &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/models/email_request.go &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/controllers/phish_test.go &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/controllers/phish.go &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/static/js/src/app/campaign_results.js &&
+      sudo sed -i 's/rid/rid_replace1/g'  /home/ubuntu/gophish/imap/monitor.go &&
+      sudo mv /home/ubuntu/gophish/controllers/phish.go /home/ubuntu/gophish/controllers/phish.backup &&
+      sudo head -n 3 /home/ubuntu/gophish/controllers/phish.backup >  /home/ubuntu/gophish/controllers/phish.go &&
+      sudo echo '       "bytes"' >> /home/ubuntu/gophish/controllers/phish.go &&
+      sudo echo '       "html/template"' >> /home/ubuntu/gophish/controllers/phish.go &&
+      sudo tail -n+4 /home/ubuntu/gophish/controllers/phish.backup | head -n 80 >> /home/ubuntu/gophish/controllers/phish.go &&
+      sudo cat /home/ubuntu/fix404.txt >> /home/ubuntu/gophish/controllers/phish.go &&
+      sudo tail -n+83 /home/ubuntu/gophish/controllers/phish.backup >> /home/ubuntu/gophish/controllers/phish.go &&
+      exit 0
